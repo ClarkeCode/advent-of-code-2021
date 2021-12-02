@@ -13,7 +13,7 @@
 				// "/Wall",//All warnings
 				"/Fe:",//Name executable
 				"${workspaceFolder}\\problem.exe",//${fileBasenameNoExtension}.exe",
-				"01/sonar-sweep-p2.c"//"${file}"
+				"02/dive-p2.c"//"${file}"
 			],
 			"problemMatcher": ["$msCompile"],
 			"group": {
