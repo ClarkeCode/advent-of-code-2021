@@ -5,21 +5,35 @@
 	"tasks": [
 		{
 			"type": "shell",
-			"label": "cl.exe build active file",
+			"label": "Clean",
+			"command": "del",
+			"args": ["/s", "/q", "*.pdb", "*obj", "*.exe", "*.ilk"],
+			"problemMatcher": ["$msCompile"]
+		},
+
+		{
+			"type": "shell",
+			"label": "Build (cl.exe)",
 			"command": "cl.exe",
 			"args": [
 				"/Zi", //Generate debugging info
 				"/EHsc",
 				// "/Wall",//All warnings
 				"/Fe:",//Name executable
-				"${workspaceFolder}\\problem.exe",//${fileBasenameNoExtension}.exe",
-				"02/dive-p2.c"//"${file}"
+				"${workspaceFolder}\\${fileBasenameNoExtension}.exe",
+				"${file}"
 			],
 			"problemMatcher": ["$msCompile"],
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			}
+		},
+
+		{
+			"label": "Clean & Build",
+			"dependsOn": ["Clean", "Build (cl.exe)"],
+			"dependsOrder": "sequence"
 		}
 	]
 }

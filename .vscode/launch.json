@@ -14,9 +14,9 @@
 		"cwd": "${workspaceFolder}",
 		"environment": [],
 		"externalConsole": true,
-		"preLaunchTask": "cl.exe build active file",
+		"preLaunchTask": "Clean & Build",
 		"windows": {
-			"program": "${workspaceFolder}/problem.exe"
+			"program": "${workspaceFolder}/${fileBasenameNoExtension}.exe"
 		}
 		}
 	]
