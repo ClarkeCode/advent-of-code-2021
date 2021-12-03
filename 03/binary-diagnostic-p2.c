@@ -7,10 +7,83 @@
 #define BUFF_SZ 128
 
 typedef struct {
-	size_t* ones;
-	size_t* zeros;
-	size_t data_width;
+	size_t ones;
+	size_t zeros;
 } BitCounter;
+
+char data[INPUT_SZ][BUFF_SZ] = {0};
+bool selected[INPUT_SZ] = {0};
+
+void get_count_from_valid_bytes(BitCounter* counter, bool* validity, size_t bit_index) {
+	for (size_t line_idx = 0; line_idx < INPUT_SZ; line_idx++) {
+		if (!(*(validity+line_idx))) continue;
+		if (*(data[line_idx]+bit_index) == '1') counter->ones++;
+		if (*(data[line_idx]+bit_index) == '0') counter->zeros++;
+	}
+}
+
+bool get_greater(BitCounter* counter, char value, char tiebreak) {
+	if (counter->ones == counter->zeros && value == tiebreak) return true;
+	else if (counter->ones > counter->zeros && value == '1') return true;
+	else if (counter->ones < counter->zeros && value == '0') return true;
+	return false;
+}
+
+bool get_lesser(BitCounter* counter, char value, char tiebreak) {
+	if (counter->ones == counter->zeros && value == tiebreak) return true;
+	else if (counter->ones < counter->zeros && value == '1') return true;
+	else if (counter->ones > counter->zeros && value == '0') return true;
+	return false;
+}
+
+void filter_on_bit(BitCounter* counter, bool* validity, size_t bit_index, bool (*predicate)(BitCounter*, char, char), char tiebreak) {
+	for (size_t line_idx = 0; line_idx < INPUT_SZ; line_idx++) {
+		if (!(*(validity+line_idx))) continue;
+		
+		if (!predicate(counter, data[line_idx][bit_index], tiebreak)) *(validity+line_idx) = false;
+	}
+}
+
+size_t countBool(bool* values, size_t sz) {
+	size_t count = 0;
+	for (size_t x = 0; x < sz; x++) {
+		if (*(values+x)) count++;
+	}
+	return count;
+}
+
+
+char* get_oxygen(bool* validity) {
+	size_t bit_index = 0;
+	while (countBool(validity, INPUT_SZ) != 1) {
+		BitCounter count = {0};
+		get_count_from_valid_bytes(&count, validity, bit_index);
+		filter_on_bit(&count, validity, bit_index, &get_greater, '1');
+		bit_index++;
+	}
+
+	size_t idx = 0;
+	while (!(*validity++)) { idx++; }
+	char* selected = data[idx];
+	return selected;
+}
+
+char* get_co2(bool* validity) {
+	size_t bit_index = 0;
+	while (countBool(validity, INPUT_SZ) != 1) {
+		BitCounter count = {0};
+		get_count_from_valid_bytes(&count, validity, bit_index);
+		filter_on_bit(&count, validity, bit_index, &get_lesser, '0');
+		bit_index++;
+	}
+
+	size_t idx = 0;
+	while (!(*validity++)) { idx++; }
+	char* selected = data[idx];
+	return selected;
+}
+
+
 
 size_t value_from_binary_str(char* buff) {
 	size_t temp = 0;
@@ -29,96 +102,26 @@ char* fgetline(FILE* fp, char* buff) {
 }
 
 
-void incrementCounter(BitCounter* counter, char* buff) {
-	for (size_t offset = 0; buff[offset] != '\0'; offset++) {
-		if (buff[offset] == '1') counter->ones[offset]++;
-		else                     counter->zeros[offset]++;
-	}
-}
-
-char* leastCommonFromCounter(BitCounter* counter, char* buff) {
-	for (size_t x = 0; x < counter->data_width; x++) {
-		size_t count_1 = *(counter->ones+x);
-		size_t count_0 = *(counter->zeros+x);
-
-		*buff++ = (count_1 < count_0) ? '1' : '0';
-	}
-	return buff;
-}
-char* mostCommonFromCounter(BitCounter* counter, char* buff) {
-	for (size_t x = 0; x < counter->data_width; x++) {
-		size_t count_1 = *(counter->ones+x);
-		size_t count_0 = *(counter->zeros+x);
-
-		*buff++ = (count_1 >= count_0) ? '1' : '0';
-	}
-	return buff;
-}
 
 bool matchesFirstN(char* item, char* control, size_t n) { return strncmp(item, control, n) == 0; }
 
 int main(int argc, char* argv[]) {
 
-	BitCounter counter = {0};
-
 	FILE* fp = fopen("03\\input.txt", "r");
 
 	size_t lines = 0;
-	char data[INPUT_SZ][BUFF_SZ] = {0};
-
 	char buff[BUFF_SZ] = {0};
 	fgetline(fp, data[0]);
 	size_t data_width = strlen(data[0]);
-
-	counter.data_width = data_width;
-	counter.ones = calloc(data_width, sizeof(int));
-	counter.zeros = calloc(data_width, sizeof(int));
-	
-	incrementCounter(&counter, data[lines]);
 	lines++;
 
-	while (fgetline(fp, data[lines])) {
-		incrementCounter(&counter, data[lines]);
-		lines++;
-	}
+	while (fgetline(fp, data[lines])) { lines++; }
 
-	// fprintf(stdout, "Gamma: %lu\nEpsilon: %lu\nProduct: %lu\n", gamma_rate, epsilon_rate, gamma_rate*epsilon_rate);
+	memset(selected, 1, INPUT_SZ);
+	char* oxygen = get_oxygen(selected);
+	memset(selected, 1, INPUT_SZ);
+	char* co2 = get_co2(selected);
+	fprintf(stdout, "%s\n%s\n%lu\n", oxygen, co2, value_from_binary_str(oxygen) * value_from_binary_str(co2));
 
-	for (size_t x = 0; x < counter.data_width; x++) {
-		fprintf(stdout, "%3lu - %3lu\n", *(counter.ones+x), *(counter.zeros+x));
-	}
-
-	char mostCommon[BUFF_SZ] = {0};
-	char leastCommon[BUFF_SZ] = {0};
-	mostCommonFromCounter(&counter, mostCommon);
-	leastCommonFromCounter(&counter, leastCommon);
-
-	bool foundMatch = false;
-	char* oxygen;
-
-	for (size_t x = 0; x < counter.data_width; x++) {
-		for (size_t line_index = 0; line_index < INPUT_SZ; line_index++) {
-			bool doesMatch = matchesFirstN(data[line_index], mostCommon, x+1);
-			if (!foundMatch && doesMatch) {foundMatch = true; oxygen = data[line_index]; }
-			else if (foundMatch && doesMatch) {foundMatch = false; x++; line_index = -1; }
-		}
-	}
-
-	foundMatch = false;
-	char* co2;
-
-	for (size_t x = 0; x < counter.data_width; x++) {
-		for (size_t line_index = 0; line_index < INPUT_SZ; line_index++) {
-			bool doesMatch = matchesFirstN(data[line_index], mostCommon, x+1);
-			if (!foundMatch && doesMatch) {foundMatch = true; co2 = data[line_index]; }
-			else if (foundMatch && doesMatch) {foundMatch = false; x++; line_index = -1; }
-		}
-	}
-
-
-	printf("%lu\n%lu\n%lu\n", value_from_binary_str(oxygen), value_from_binary_str(co2), value_from_binary_str(oxygen)*value_from_binary_str(co2));
-
-	if (counter.ones) free(counter.ones);
-	if (counter.zeros) free(counter.zeros);
 	fclose(fp);
 }
